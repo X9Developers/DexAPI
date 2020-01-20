@@ -1,0 +1,165 @@
+syntax = "proto3";
+
+package lssdrpc;
+
+// A non-negative Big Integer represented as string, like "100000000"
+message BigInteger {
+  string value = 1;
+}
+
+enum OrderSide {
+  buy = 0;
+  sell = 1;
+}
+
+// currencies
+service currencies {
+  rpc AddCurrency (AddCurrencyRequest) returns (AddCurrencyResponse);
+}
+
+message AddCurrencyRequest {
+  string currency = 1;
+  string lndChannel = 2;
+  oneof tlsCert {
+    // Path to tlc certificate, must be used for grpc connection.
+    string certPath = 3;
+    string rawCert = 4;
+  }
+}
+message AddCurrencyResponse {}
+
+// trading pairs
+service tradingPairs {
+  rpc EnableTradingPair (EnableTradingPairRequest) returns (EnableTradingPairResponse);
+}
+
+message EnableTradingPairRequest {
+  string pairId = 1; // the trading pair to enable, like XSN_LTC
+}
+message EnableTradingPairResponse {}
+
+// orders
+service orders {
+  rpc PlaceOrder (PlaceOrderRequest) returns (PlaceOrderResponse);
+  rpc CancelOrder (CancelOrderRequest) returns (CancelOrderResponse);
+  rpc SubscribeOrders (SubscribeOrdersRequest) returns (stream OrderUpdate);
+}
+
+message PlaceOrderRequest {
+  string pairId = 1;
+  OrderSide side = 2;
+  BigInteger funds = 3;
+  BigInteger price = 4; // missing on market orders
+}
+
+// Outcome of place order, three possible situations
+// 1. Order was placed
+// 2. Order was placed and matched without going to orderbook
+// 3. Place order or swap has failed
+message PlaceOrderResponse {
+  oneof outcome {
+    SwapSuccess swapSuccess = 1;
+    Order order = 2;
+    PlaceOrderFailure failure = 3;
+  }
+}
+
+message OrderbookFailure {
+  string pairId = 1;
+  BigInteger funds = 2;
+  string failureReason = 3;
+  BigInteger requiredFee = 4;
+}
+
+message PlaceOrderFailure {
+  oneof failure {
+    SwapFailure swapFailure = 1;
+    OrderbookFailure orderbookFalure = 2;
+  }
+}
+
+message CancelOrderRequest {
+  string pairId = 1;
+  string orderId = 2;
+}
+message CancelOrderResponse {}
+
+message SubscribeOrdersRequest {}
+
+message OrderUpdate {
+  oneof update {
+    // An order that was added to the order book.
+    Order order = 1;
+    // An order that was removed from the order book.
+    Order orderRemoval = 2;
+  }
+}
+
+message Order {
+  string pairId = 1;
+  string orderId = 2;
+  // The price of the order in satoshis.
+  BigInteger price = 3;
+  // The funds of the order in satoshis.
+  BigInteger funds = 4;
+  // The epoch time when this order was created.
+  uint64 createdAt = 5;
+  // Whether this order is a buy or sell
+  OrderSide side = 6;
+  // Whether this order is a local own order or a remote peer order.
+  bool isOwnOrder = 7;
+}
+
+// swaps
+service swaps {
+  rpc SubscribeSwaps (SubscribeSwapsRequest) returns (stream SwapResult);
+}
+
+message SubscribeSwapsRequest {}
+message SwapResult {
+  oneof value {
+    SwapSuccess success = 1;
+    SwapFailure failure = 2;
+  }
+}
+
+message SwapSuccess {
+  // Order id assigned by orderbook
+  string orderId = 1;
+  // The trading pair that the swap is for.
+  string pairId = 2;
+  // The order funds that was swapped.
+  BigInteger funds = 3;
+  // The hex-encoded payment hash for the swap.
+  string rHash = 4;
+  // The amount received denominated in satoshis.
+  BigInteger amountReceived = 5;
+  // The amount sent denominated in satoshis.
+  BigInteger amountSent = 6;
+
+  enum Role {
+    TAKER = 0;
+    MAKER = 1;
+  }
+  // Our role in the swap, either MAKER or TAKER.
+  Role role = 7;
+  // The ticker symbol of the currency received.
+  string currencyReceived = 8;
+  // The ticker symbol of the currency sent.
+  string currencySent = 9;
+  // The hex-encoded preimage.
+  string rPreimage = 10;
+  // The price used for the swap.
+  BigInteger price = 11;
+}
+
+message SwapFailure {
+  // Order id assigned by orderbook
+  string orderId = 1;
+  // The trading pair that the swap is for.
+  string pairId = 2;
+  // The order funds that was attempted to be swapped.
+  BigInteger funds = 3;
+  // The reason why the swap failed.
+  string failureReason = 4;
+}
