@@ -2,6 +2,7 @@ package io.stakenet.dex
 
 import io.stakenet.dex.lssd.LssdClientBuilder
 import lssdrpc.lssdrpc.AddCurrencyRequest.TlsCert
+import lssdrpc.lssdrpc.SwapResult.Value
 import lssdrpc.lssdrpc._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -81,20 +82,23 @@ class Exchange(pair: String,
   private def subscribe(onOrderPlaced: Order => Unit,
                         onOrderRemoved: String => Unit) = {
     val a = Future {
-      log("Subscribe to swap failures")
+      log("Subscribe to swaps")
       swapLssd.subscribeSwaps(SubscribeSwapsRequest()).foreach { f =>
-        println(s"SwapFailure: $f")
+        f.value match {
+          case Value.Empty => println("unknown message")
+          case Value.Success(value) =>
+            log(s"swap success: $value")
+            val order = myOpenOrders.find(value.orderId == _.orderId).map(_.copy(orderId = ""))
+            order.foreach(placeOrder)
+          case Value.Failure(value) =>
+            log(s"swap failure: $value")
+            val order = myOpenOrders.find(value.orderId == _.orderId).map(_.copy(orderId = ""))
+            order.foreach(placeOrder)
+        }
       }
     }
 
     val b = Future {
-      log("Subscribe to swaps")
-      swapLssd.subscribeSwaps(SubscribeSwapsRequest()).foreach { s =>
-        println(s"Swap: $s")
-      }
-    }
-
-    val c = Future {
       log("Subscribe to orders")
       ordersLssd.subscribeOrders(SubscribeOrdersRequest()).foreach {
         orderUpdate =>
@@ -118,7 +122,7 @@ class Exchange(pair: String,
       }
     }
 
-    Future.sequence(List(a, b, c)).map(_ => ())
+    Future.sequence(List(a, b)).map(_ => ())
   }
 
   private def log(msg: String): Unit = {
