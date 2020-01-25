@@ -3,7 +3,7 @@
 Trading-bot is a project built in scala, which is responsible for generating and placing orders to the orderbook, to make this, the bot has to connect with the lssd grpc app.  
 Firstly it registers the currencies with which it will be working, after that it creates the trading_pair, then creates orders randomly, to both sides, Sell and Buy and send them to the lssd. 
 
-## How works: 
+## How it works: 
 
 1. Trading bot defines where to find the lnd nodes.
 2. Create the currencies 
@@ -25,8 +25,8 @@ To run this project you have to install the next components:
 Before running the bot we must configure the lnd in the next ports without macaroons:
 
 * LTC: localhost:10001
-* XSN: localhost:10002
-* BTC: localhost:10003
+* BTC: localhost:10002
+* XSN: localhost:10003
 
 Clone the repository with 
 
@@ -38,3 +38,5 @@ Clone the repository with
 
 Open the project and you must add the cert file into  
     `trading-bot/src/main/resources` 
+
+Then you must open a terminal in project root and run `sbt run`

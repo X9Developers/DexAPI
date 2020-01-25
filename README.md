@@ -1,34 +1,40 @@
 # DexAPI
-The project is an example of a bot for placing orders to the orderbook.
-Contains the description of how to create your own bot.
+The project has the nessesary components to create a bot for the [Stakenet Dex](http://orderbook.stakenet.io/).
+
 
 # Components
 
-* Trading-bot: a project built in scala, which is responsible for generating and placing orders to the orderbook, to make this, the bot has to connect with the lssd grpc app.  
-Firstly it registers the currencies with which it will be working, after that it creates the trading_pair, then creates orders randomly, to both sides, Sell and Buy and send them to the lssd. You can see the docs [Here](https://github.com/X9Developers/DexAPI/tree/master/trading-bot) 
+* [Trading-bot:](https://github.com/X9Developers/DexAPI/tree/master/trading-bot) a project built in scala, which is responsible for generating and placing orders to the orderbook, to make this, the bot has to connect with the lssd app by using its grpc api.  
+Firstly it registers the currencies with which it will be working, after that it creates the trading_pair (you must use only the available ones from our [orderbook](http://orderbook.stakenet.io/)), then creates orders randomly, to both sides, Sell and Buy and send them to the lssd. You can see the docs [here](https://github.com/X9Developers/DexAPI/tree/master/trading-bot) 
 
 
-* Lssd app: the light wallet daemon, is the grpc application to place orders to the orderbook, also is responsible for making the swaps, the light wallet connects with the lnd nodes to manage the wallets. 
-This service runs in `localhost: 50051`
+* Lssd: the light wallet daemon, is the grpc application to place orders to the orderbook, also is responsible for making the swaps, the light wallet connects with the lnd nodes to manage the wallets. 
+This service is listening in `localhost: 50051`
 
-    To run lssd: Open a terminal in `lssd/app/` and run `./lssd`. 
+    To run lssd: Download the app from [releases page](https://github.com/X9Developers/DexAPI/releases), take the last version
+    
+    Extract the zip file and open a terminal in `lssd/app/`.  then run `./lssd`. 
 
     To see if the api is working you can see the logs with:   
 
     `tail -f ~/.local/share/Stakenet/lssd/lssd.log`
 
+here you should see the [stakenet.orderbook](http://orderbook.stakenet.io/) broadcasting some messages regularly.
 
 * Custom lnds 
-    They can be downloaded from [Here](https://github.com/X9Developers/DexAPI/releases/download/v2020.01.23/customlnds.zip)
+    They can be downloaded from [releases page](https://github.com/X9Developers/DexAPI/releases), take the last version 
 
     You must install the custom lnds in the next ports:
     * LTC: localhost:10001
     * BTC: localhost:10002
     * XSN: localhost:10003
 
+    You can find how to configure and run them [here](https://github.com/X9Developers/DexAPI/LNDCONFIGURATION.md)
+
 # Create your own Bot 
 
 After running the services of lssd and lnd, these are the data we will need to create our own bot:
+
 From lssd
 * Ip
 * Port
@@ -38,64 +44,43 @@ From lssd
 * Port:
 * Tls cert:
  
-To create the bot you need to follow the protobuf file (lssdrpc.proto) that comes within the lssd zip, in the app folder. which is downloaded from [here](https://github.com/X9Developers/DexAPI/releases/download/v2020.01.23/lssd.zip)
+To create the bot you need to follow the protobuf file (lssdrpc.proto) that comes within the lssd zip, in the app folder. which is downloaded from [releases page](https://github.com/X9Developers/DexAPI/releases), take the last version 
 
 
-Step 1: Create the grpc client for each service,  and create the trading pair for example: 
+Step 1: Add the currencies (you must use only the available ones from our [orderbook](http://orderbook.stakenet.io/))
 
-    object Exchange {
-        def apply(lssdConfig: LssdRpcConfig,
-                    lndLtcConfig: LndRpcConfig,
-                    lndXsnConfig: LndRpcConfig): Exchange = {
-            val currenciesLssd =
-            LssdClientBuilder.currenciesClient(lssdConfig.host, lssdConfig.port)
-            val ordersLssd =
-            LssdClientBuilder.ordersClient(lssdConfig.host, lssdConfig.port)
-            val tradingPairLssd =
-            LssdClientBuilder.tradingPairsClient(lssdConfig.host, lssdConfig.port)
-            val swapsLssd =
-            LssdClientBuilder.swapsClient(lssdConfig.host, lssdConfig.port)
-        }
+    // currencies
+    service currencies {
+        rpc AddCurrency (AddCurrencyRequest) returns (AddCurrencyResponse);
     }
 
-Step 2: Create the trading pair: 
+Step 2 Then you must create the trading pair with:
 
-First we must add a currency to our lssd with: 
-
-    AddCurrencyRequest(
-        currency = "XSN,
-        lndChannel = "localhost:1003",
-        tlsCert = "/resources/tls.cert" )
-    currenciesLssd.addCurrency(request)
-
-Step 3 Then you must create the trading pair with:
-
-    tradingPairLssd.enableTradingPair(EnableTradingPairRequest(pair))
+    // trading pairs
+    service tradingPairs {
+        rpc EnableTradingPair (EnableTradingPairRequest) returns (EnableTradingPairResponse);
+    }
 
 
-Step 4: Place orders: 
-We have to create the order request for example:
+Step 3: Place orders: 
+We have to create the order request with:
 
-    val request = PlaceOrderRequest(
-          pairId = "XSN_LTC",
-          side = OrderSide.buy,
-          funds = Some(BigInteger(funds.toString)),
-          price = Some(BigInteger(price.toString)),
-        )
+    message PlaceOrderRequest {
+        string pairId = 1;
+        OrderSide side = 2;
+        BigInteger funds = 3;
+        BigInteger price = 4; // missing on market orders
+    }
 
 
-Step 5: Send the request to the lssd with:
+Step 4: Send the request to the lssd with:
 
-    exchange.placeOrder(request)
+    rpc PlaceOrder (PlaceOrderRequest) returns (PlaceOrderResponse);
 
-Step 6: Wait until lssd daemon completes the swap, you can subscribe to swaps to know if swap is success or failure for example: 
+Step 5: Waits until lssd daemon completes the swap, you can subscribe to swaps to know if swap is success or failure with: 
 
-      swapLssd.subscribeSwaps(SubscribeSwapsRequest()).foreach { f =>
-        f.value match {
-          case Value.Success(value) =>
-            log(s"swap success: $value")
-          case Value.Failure(value) =>
-            log(s"swap failure: $value")
-          case Value.Empty => println("unknown message")
-        }
-      }
+    // swaps
+    service swaps {
+        rpc SubscribeSwaps (SubscribeSwapsRequest) returns (stream SwapResult);
+    }
+      
