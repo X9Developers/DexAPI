@@ -29,7 +29,7 @@ here you should see the [stakenet.orderbook](http://orderbook.stakenet.io/) broa
     * BTC: localhost:10002
     * XSN: localhost:10003
 
-    You can find how to configure and run them [here](https://github.com/X9Developers/DexAPI/LNDCONFIGURATION.md)
+    [How to configure custom LND](https://github.com/X9Developers/DexAPI/blob/lnd-conf/LNDCONFIGURATION.md)
 
 # Create your own Bot 
 
