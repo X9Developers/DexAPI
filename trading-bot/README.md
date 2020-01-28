@@ -18,9 +18,13 @@ Firstly it registers the currencies with which it will be working, after that it
 
 To run this project you have to install the next components: 
 
-* Java 8 Oracle: https://www.digitalocean.com/community/tutorials/how-to-install-java-with-apt-get-on-ubuntu-16-04
+* Java 8 Oracle: 
 
-* Scala build tool: https://www.scala-sbt.org/
+
+    - Ubuntu 18.04: `sudo apt install openjdk-8-jdk`
+    - Ubuntu 16.04: https://www.digitalocean.com/community/tutorials/how-to-install-java-with-apt-get-on-ubuntu-16-04
+
+* Download and Install sbt:  https://www.scala-sbt.org/
 
 Before running the bot we must configure the lnd in the next ports without macaroons:
 
