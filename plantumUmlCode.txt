@@ -1,0 +1,19 @@
+@startuml
+Bot->Lssd : Create currencies
+Bot->Lssd : Create trading pair
+Bot->Lssd : Place order
+Bot->Lssd : Subscribe orders
+Bot->Lssd : Subscribe swaps
+Lssd->Hub : Pay fee
+Hub->Lssd : Pay fee response
+Lssd->Orderbook : Place order
+Orderbook->Hub : Validate fee
+Hub->Orderbook : Validate fee response
+Orderbook->Lssd : Place order response
+Lssd->Bot : Place order response
+Orderbook->Lssd : Order matched
+Lssd->Orderbook : Swap messages
+Orderbook->Lssd : Swap messages
+Lssd->Bot : Swap success
+Bot->Lssd : Place order
+@enduml
