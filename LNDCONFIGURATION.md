@@ -1,7 +1,7 @@
 # Lightning Network Daemons (LND’s) Configuration
 Here you can choose either put all configs in one directory, or split them up. if you split them, you will have two tls cert files, So we will be using `/.lnd_xsn/` for the XSN LND and `./lnd_ltc/` for the LTC LND.
 
-## LND_XSN: /.lnd_xsn/lnd.conf  
+## Example of LND_XSN: /.lnd_xsn/lnd.conf  
 
     alias=magic-xsn-ln-node
     color=#1d013c
@@ -37,7 +37,7 @@ Here you can choose either put all configs in one directory, or split them up. i
 
 
 
-## LND_LTC: /.lnd_ltc/lnd.conf  
+## Example of LND_LTC: /.lnd_ltc/lnd.conf  
 
     alias=magic-ltc-ln-node
     color=#1d013c
@@ -59,7 +59,23 @@ Here you can choose either put all configs in one directory, or split them up. i
     litecoind.zmqpubrawtx=127.0.0.1:28337
 
 
+# Some extra lnd arguments explained (recommended to use):
 
+* nobootstrap=1 ( If true, then automatic network bootstrapping will not be attempted )
+
+* <coinname>.defaultchanconfs=6 
+
+* autopilot.maxchannels=N (max channels number that expected to be opened with autopilot, in wallet we are using 1 at the moment).
+
+* autopilot.conftarget=6 ( all nodes are using 6 confirmations to apply channel as opened )
+
+* chan-enable-timeout=1m ( The duration a peer's connect must remain stable before attempting to reenable the channel ).
+
+* maxpendingchannels=N ( should be bigger then 1 for dual funding to work properly, recommended 5-10 )
+
+* maxlogfiles=N ( number of logfiles to be saved in a logs folder, each file is 10mb gz archive, recommended to use at least 10 files )
+
+* max-cltv-expiry=N ( should be configured for each chain, for XSN  =10080, for LTC =4032, for BTC – no need, will use default, set to 1000 ).
 
 
 # Run the LND’s
@@ -108,3 +124,69 @@ if you created the LND with “--no-macaroons”, you also need to add this here
     deposit some XSN to the output of step 3.
     ./lncli --lnddir="/root/.lnd_xsn" -rpcserver="localhost:10003" --no-macaroons walletbalance
     wait for confirmations
+
+# Creating channels:
+
+In order to swap successfully there’s a need in payment channels to be created. 	
+
+
+Channels can be created in two ways:
+
+1. Manually ( using openchannel comand from lncli );
+2. Using autopilot configuration ( activate autopilot on start + make connections to hub nodes );
+
+	For bot making, it is better to use manual open, as this way you can specify exact capacities for your channels.
+
+	At the moment all users have channels with our hub nodes, so for bot, to successfully swap orders, it is enough to have channels with at least one hub node per coin. 
+
+
+Currently existing nodes described below:
+
+## btc hub nodes:
+ 
+    "03f1b0a270f5e57292732c3b44b2582324b144df6b2981a3ba46b6a5bc435479bc@134.209.164.91:8000"
+    "023a0c53433904339b7bdbd725151aaed10922e2f9aca5ec979ed75a370615f24e@134.209.164.91:9000"
+
+## ltc hub nodes:
+
+    "032c6e03e7a316baa3fb64fb360ebd8520e90a21b5a3c4bfca7fd75689a1564ae3@134.209.164.91:8002"
+    "02b9068bdb2837afc380a166434dea1a3c798cb2b7cbc8da7c7b7ac7854be11664@134.209.164.91:9002"
+
+## xsn hub nodes:
+
+    "02a49dc96ebcfd889f2cc694e9135fc8a502f7df4aa42b9a6f88d57759ddee5385@134.209.164.91:8384"
+    "0207e0cc77fcb96a895e6935dee205e2b16a8df5ed49827f70977a268625237214@134.209.164.91:7777"
+
+
+When setting up channels and placing orders, you must count next restrictions:
+
+## Channel capacities: 
+
+    xsn min channel: 0.0006 XSN
+    xsn max channel: 1000 XSN
+
+    btc min channel: 0.0002 BTC
+    btc max channel: 0.16 BTC
+
+    ltc min channel: 0.00275 LTC
+    ltc max channel: 10 LTC
+
+
+## Payment capacities: 
+
+    xsn max payment: 250 XSN
+    ltc max payment: 2.5 LTC
+    btc max payment: 0.04 BTC
+
+## Example of channel open:
+
+    lncli <node params (rpcserver, macaroons) > connect $HUB_PUBKEY@HUB_IP:NODE_PORT
+    lncli <node params (rpcserver, macaroons) > openchannel --node_key=$HUB_PUBKEY –local_amt=N(in satoshi)
+
+Now need to wait until the payment is confirmed ( 6 blocks generated) though the above command generated a transaction id you can track it in the xsnexplorer.io, the pending channels can be seen with the pending channels command:
+
+    lncli <node params (rpcserver, macaroons) > pendingchannels
+
+Once the channel is opened, you can list the payment channel with the following:
+
+    lncli <node params (rpcserver, macaroons) > listchannels
