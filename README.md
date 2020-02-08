@@ -90,4 +90,41 @@ Step 5: Waits until lssd daemon completes the swap, you can subscribe to swaps t
     service swaps {
         rpc SubscribeSwaps (SubscribeSwapsRequest) returns (stream SwapResult);
     }
-      
+
+## How to get the list of open orders
+Note: You need to activate the trading pair before asking for orders.
+
+First we have to request the list of open orders with 
+
+    rpc ListOrders (ListOrdersRequest) returns (ListOrdersResponse);
+
+    message ListOrdersRequest {
+        string pairId = 1; // the pair id like XSN_BTC. 
+        bool includeOwnOrders = 2; // if the list will include own orders.
+        uint32 skip = 3; // The number of orders to skip, this is useful for pagination.  
+        uint32 limit = 4; // The limit of orders to retrieve, useful for pagination.
+    }
+  
+That will return a list of orders that can be filtered with the `isOwnOrder` attribute included in the `Order` object
+
+    message Order {
+        string pairId = 1;
+        string orderId = 2;
+        // The price of the order in satoshis.
+        BigInteger price = 3;
+        // The funds of the order in satoshis.
+        BigInteger funds = 4;
+        // The epoch time when this order was created.
+        uint64 createdAt = 5;
+        // Whether this order is a buy or sell
+        OrderSide side = 6;
+        // Whether this order is a local own order or a remote peer order.
+        bool isOwnOrder = 7;
+    }
+
+After we recieve the orders, we have to subscribe for new orders with: 
+
+    rpc SubscribeOrders (SubscribeOrdersRequest) returns (stream OrderUpdate);
+
+Then use the `isOwnOrder` attribute to filter the orders. 
+
