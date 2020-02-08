@@ -1,7 +1,7 @@
 package io.stakenet.dex
 
 import io.stakenet.dex.lssd.LssdClientBuilder
-import lssdrpc.lssdrpc.AddCurrencyRequest.TlsCert
+import lssdrpc.lssdrpc.AddCurrencyRequest._
 import lssdrpc.lssdrpc.PlaceOrderResponse.Outcome
 import lssdrpc.lssdrpc.SwapResult.Value
 import lssdrpc.lssdrpc._
@@ -26,18 +26,33 @@ class Exchange(pair: String,
                swapLssd: swapsGrpc.swapsBlockingClient) {
 
   private var myOpenOrders: Set[Order] = Set.empty
+  private var openOrders: Set[Order] = Set.empty
 
-  private def unsafeUpdateOpenOrders(newOpenOrders: Set[Order]): Unit = {
-    myOpenOrders = newOpenOrders
+  private def unsafeInsertMyOpenOrder(order: Order): Unit = {
+    myOpenOrders = myOpenOrders + order
   }
 
-  private def unsafeInsertOpenOrder(order:Order): Unit = {
-    unsafeUpdateOpenOrders(myOpenOrders + order)
+  private def unsafeRemoveMyOpenOrder(order: Order): Unit = {
+    myOpenOrders = myOpenOrders - order
+  }
+
+  private def unsafeInsertOpenOrder(order: Order): Unit = {
+    openOrders = openOrders + order
+  }
+
+  private def unsafeRemoveOpenOrder(order: Order): Unit = {
+    openOrders = openOrders - order
+  }
+
+  def getOpenOrders: ListOrdersResponse = {
+    ordersLssd.listOrders(
+      ListOrdersRequest(pairId = pair, includeOwnOrders = true, limit = 500)
+    )
   }
 
   @tailrec
   final def placeOrder(request: PlaceOrderRequest, placeOrderTry: Int): Unit = {
-    val response =  ordersLssd.placeOrder(request)
+    val response = ordersLssd.placeOrder(request)
 
     response.outcome match {
       case Outcome.Empty => println("Empty Response")
@@ -46,16 +61,14 @@ class Exchange(pair: String,
         placeOrder(request, 1)
       }
       case Outcome.Order(value) => {
-        println(s"Order Placed: $value")
-        handleOrderPlaced(value)
+        println(s"My Order Placed: $value")
       }
-      case Outcome.Failure(value) =>{
-        if(placeOrderTry < 6) {
-          println(s"Retrying: $request")
+      case Outcome.Failure(value) => {
+        if (placeOrderTry < 6) {
+          println(s"Retrying #$placeOrderTry: $request")
           Thread.sleep(300)
           placeOrder(request, placeOrderTry + 1)
-        }
-        else println(s"Failure: $value")
+        } else println(s"Failure: $value")
       }
     }
   }
@@ -67,20 +80,27 @@ class Exchange(pair: String,
         side = order.side,
         funds = order.funds,
         price = order.price,
-      ), placeOrderTry
+      ),
+      placeOrderTry
     )
   }
 
   private def handleOrderPlaced(order: Order): Unit = synchronized {
-   unsafeInsertOpenOrder(order)
+    if (order.isOwnOrder) {
+      unsafeInsertMyOpenOrder(order)
+    } else {
+      unsafeInsertOpenOrder(order)
+    }
   }
 
-  private def handleOrderRemoved(removedOrderId: String): Unit = synchronized {
-    val (orderMaybe, newOpenOrders) = myOpenOrders.partition(_.orderId == removedOrderId)
-    unsafeUpdateOpenOrders(newOpenOrders)
-
-    orderMaybe.foreach { orderRemoved =>
-      placeOrder(orderRemoved)
+  private def handleOrderRemoved(order: Order): Unit = synchronized {
+    if (order.isOwnOrder) {
+      println(s"My Order Removed: ${order.orderId}")
+      unsafeRemoveMyOpenOrder(order)
+      placeOrder(order)
+    } else {
+      println(s"Order Removed: ${order.orderId}")
+      unsafeRemoveOpenOrder(order)
     }
   }
 
@@ -99,6 +119,11 @@ class Exchange(pair: String,
     // After enableTradingPair, lssd runs a command to get the current orders which runs in another thread,
     // this sleep tries to ensure that the response for that command has been received.
     Thread.sleep(3000)
+
+    val (myOrders, orders) = getOpenOrders.orders.toSet.partition(_.isOwnOrder)
+    myOpenOrders = myOrders
+    openOrders = orders
+
     subscribe(
       onOrderPlaced = handleOrderPlaced,
       onOrderRemoved = handleOrderRemoved
@@ -106,7 +131,7 @@ class Exchange(pair: String,
   }
 
   private def subscribe(onOrderPlaced: Order => Unit,
-                        onOrderRemoved: String => Unit) = {
+                        onOrderRemoved: Order => Unit) = {
     val a = Future {
       log("Subscribe to swaps")
       swapLssd.subscribeSwaps(SubscribeSwapsRequest()).foreach { f =>
@@ -114,10 +139,10 @@ class Exchange(pair: String,
           case Value.Empty => println("unknown message")
           case Value.Success(value) =>
             val order = myOpenOrders.find(value.orderId == _.orderId)
-            order.foreach(placeOrder(_,1))
+            order.foreach(placeOrder(_, 1))
           case Value.Failure(value) =>
             val order = myOpenOrders.find(value.orderId == _.orderId)
-            order.foreach(placeOrder(_,1))
+            order.foreach(placeOrder(_, 1))
         }
       }
     }
@@ -127,24 +152,14 @@ class Exchange(pair: String,
       ordersLssd.subscribeOrders(SubscribeOrdersRequest()).foreach {
         orderUpdate =>
           orderUpdate.update match {
-            case OrderUpdate.Update.OrderRemoval(value) =>
-              val orderMaybe = myOpenOrders.find(_.orderId == value.orderId)
-              orderMaybe match {
-                case Some(value) =>{
-                  log(s"my order removed = ${value.orderId}")
-                  placeOrder(value)
-                }
-                case None => log(s"order removed = ${value.orderId}")
-              }
-
-            case OrderUpdate.Update.Order(value) if value.isOwnOrder =>
-              println(s"My Order Placed $value")
-              onOrderPlaced(value)
+            case OrderUpdate.Update.OrderRemoval(order) =>
+              handleOrderRemoved(order)
+            case OrderUpdate.Update.Order(order) =>
+              handleOrderPlaced(order)
             case _ => ()
           }
       }
     }
-
     Future.sequence(List(a, b)).map(_ => ())
   }
 
@@ -201,7 +216,8 @@ object Bot {
           side = OrderSide.buy,
           funds = Some(BigInteger(price.toString)),
           price = Some(BigInteger(price.toString)),
-        ),1
+        ),
+        1
       )
     }
     println("Exchange - Buy orders placed")
@@ -214,12 +230,12 @@ object Bot {
           side = OrderSide.sell,
           price = Some(BigInteger(price.toString)),
           funds = Some(BigInteger(price.toString))
-        ),1
+        ),
+        1
       )
     }
     println("Exchange - Sell orders placed")
   }
-
 
   def exchangeA(): Exchange = {
     val tlsCertRaw = readFile("exchange-a-tls.cert")

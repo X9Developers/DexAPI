@@ -43,6 +43,18 @@ service orders {
   rpc PlaceOrder (PlaceOrderRequest) returns (PlaceOrderResponse);
   rpc CancelOrder (CancelOrderRequest) returns (CancelOrderResponse);
   rpc SubscribeOrders (SubscribeOrdersRequest) returns (stream OrderUpdate);
+  rpc ListOrders (ListOrdersRequest) returns (ListOrdersResponse);
+}
+
+message ListOrdersRequest {
+  string pairId = 1;
+  bool includeOwnOrders = 2;
+  uint32 skip = 3;
+  uint32 limit = 4;
+}
+
+message ListOrdersResponse {
+  repeated Order orders = 1;
 }
 
 message PlaceOrderRequest {
