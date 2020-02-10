@@ -12,7 +12,7 @@ Firstly it registers the currencies with which it will be working, after that it
 
 * lssd: Lightwallet Swap Service Daemon. Is a grpc application which is listening in `localhost: 50051`, is responsible for placing orders to the [Stakenet Dex](http://orderbook.stakenet.io/) and for making the swaps, to work the the lssd api needs to conect with [Lightning Network](https://lightning.network/) nodes to manage the wallets. 
 
-    To understand the api, you have to read the proto file from [releases page](https://github.com/X9Developers/DexAPI/releases) in the lssd zip folder with the name of lssd.proto. 
+    To understand the api, you have to read the proto file from [releases page](https://github.com/X9Developers/DexAPI/releases) in the lssd zip folder with the name of lssd.proto. Also you can find the lssd documentation [here](http://orderbook.stakenet.io/assets/docs/lssd.html)
 
     To run lssd: Download the app from [releases page](https://github.com/X9Developers/DexAPI/releases), take the last version
 
