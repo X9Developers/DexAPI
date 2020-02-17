@@ -1,16 +1,16 @@
 # DexAPI
-The project has the nessesary components to create a bot for the [Stakenet Dex](http://orderbook.stakenet.io/).
+The project has the necessary components to create a bot for the [Stakenet Dex](http://orderbook.stakenet.io/).
 
 
 # Components
 
 ![alt text](components.png)
 
-* [trading-bot:](https://github.com/X9Developers/DexAPI/tree/master/trading-bot) a project built in scala, which is responsible for generating and placing orders to the orderbook, to make this, the bot has to connect with the lssd app by using its grpc api.  
-Firstly it registers the currencies with which it will be working, after that it creates the trading_pair (you must use only the available ones from our [orderbook](http://orderbook.stakenet.io/)), then creates orders randomly, to both sides, Sell and Buy and send them to the lssd. You can see the docs [here](https://github.com/X9Developers/DexAPI/tree/master/trading-bot) 
+* [trading-bot:](https://github.com/X9Developers/DexAPI/tree/master/trading-bot) a project built in scala, which is responsible for generating and placing orders to the orderbook, to make this, the bot has to connect with the lssd app by using its grpc api. Firstly it registers the currencies with which it will be working, after that it creates the trading_pair (you must use only the available ones from our [orderbook](http://orderbook.stakenet.io/)), then creates orders randomly, to both sides, Sell and Buy and send them to the lssd. You can see the docs [here](https://github.com/X9Developers/DexAPI/tree/master/trading-bot).
 
+    Alternatively, you can also can also check out a go implementation of the trading-bot: [github.com/cwntr/go-dex-trading-bot](https://github.com/cwntr/go-dex-trading-bot).
 
-* lssd: Lightwallet Swap Service Daemon. Is a grpc application which is listening in `localhost: 50051`, is responsible for placing orders to the [Stakenet Dex](http://orderbook.stakenet.io/) and for making the swaps, to work the the lssd api needs to conect with [Lightning Network](https://lightning.network/) nodes to manage the wallets. 
+* lssd: Lightwallet Swap Service Daemon. Is a grpc application which is listening in `localhost: 50051`, is responsible for placing orders to the [Stakenet Dex](http://orderbook.stakenet.io/) and for making the swaps, to work the the lssd api needs to connect with [Lightning Network](https://lightning.network/) nodes to manage the wallets. 
 
     To understand the api, you have to read the proto file from [releases page](https://github.com/X9Developers/DexAPI/releases) in the lssd zip folder with the name of lssd.proto. Also you can find the lssd documentation [here](http://orderbook.stakenet.io/assets/docs/lssd.html)
 
@@ -42,15 +42,15 @@ Firstly it registers the currencies with which it will be working, after that it
 
 After running the services of lssd and lnd, these are the data we will need to create our own bot:
 
-From lssd
+From lssd:
 * Ip
 * Port
 
-  From lnd:
+From lnd:
 * Ip
-* Port:
-* Tls cert:
- 
+* Port
+* Tls cert
+
 To create the bot you need to follow the protobuf file (lssdrpc.proto) that comes within the lssd zip, in the app folder. which is downloaded from [releases page](https://github.com/X9Developers/DexAPI/releases), take the last version 
 
 
@@ -122,7 +122,7 @@ That will return a list of orders that can be filtered with the `isOwnOrder` att
         bool isOwnOrder = 7;
     }
 
-After we recieve the orders, we have to subscribe for new orders with: 
+After we receive the orders, we have to subscribe for new orders with: 
 
     rpc SubscribeOrders (SubscribeOrdersRequest) returns (stream OrderUpdate);
 
