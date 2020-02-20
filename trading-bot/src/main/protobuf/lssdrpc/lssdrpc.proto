@@ -14,15 +14,27 @@ enum OrderSide {
 
 // currencies
 service currencies {
+  // before being able to enable a trading pair, you need to add the two involved currencies
+  // for example, for activating XSN_LTC, you will add the XSN currency, and the LTC currency.
+  //
+  // For now, only currencies supported by lnd (lightning network) work.
   rpc AddCurrency (AddCurrencyRequest) returns (AddCurrencyResponse);
 }
 
 message AddCurrencyRequest {
+  // the currency, like XSN or LTC
   string currency = 1;
+
+  // the address:port allowing lssd to connect to this currency lnd, like "localhost:10001"
+  // right now, it is assumed that the bot runs on the same network than lssd, so, there is
+  // no support for authentication.
   string lndChannel = 2;
+
+  // the tls certificate used by lnd, so that lssd can be sure it's connecting to the right lnd
   oneof tlsCert {
-    // Path to tlc certificate, must be used for grpc connection.
+    // the path to the tls certificate, if the certificate is stored on the same computer
     string certPath = 3;
+    // the raw tls certificate represented as string
     string rawCert = 4;
   }
 }
@@ -30,6 +42,12 @@ message AddCurrencyResponse {}
 
 // trading pairs
 service tradingPairs {
+  // Enables the given trading pair, like XSN_LTC, before calling this method, you must
+  // have already added the involved currencies.
+  //
+  // After enabling a trading pair, lssd will download the existing orders form the orderbook,
+  // try waiting some seconds (5 should be enough) before performing any other operation, so
+  // that lssd has the time to sync because this is done in the background.
   rpc EnableTradingPair (EnableTradingPairRequest) returns (EnableTradingPairResponse);
 }
 
@@ -40,9 +58,19 @@ message EnableTradingPairResponse {}
 
 // orders
 service orders {
+  // Places an order to the orderbook, you must have already enabled the involved trading pair.
+  //
+  // NOTE: After the order is matched, lssd will perform the swap automatically, so, your lnd
+  // needs to have a channel with enough coins to our hub.
   rpc PlaceOrder (PlaceOrderRequest) returns (PlaceOrderResponse);
+
+  // Cancels an existing order.
   rpc CancelOrder (CancelOrderRequest) returns (CancelOrderResponse);
+
+  // Susbcribe to events related to the orders in the orderbook.
   rpc SubscribeOrders (SubscribeOrdersRequest) returns (stream OrderUpdate);
+
+  // List the available order on the orderbook.
   rpc ListOrders (ListOrdersRequest) returns (ListOrdersResponse);
 }
 
@@ -52,15 +80,14 @@ message ListOrdersRequest {
   uint32 skip = 3;
   uint32 limit = 4;
 }
-
 message ListOrdersResponse {
   repeated Order orders = 1;
 }
 
 message PlaceOrderRequest {
   string pairId = 1;
-  OrderSide side = 2;
-  BigInteger funds = 3;
+  OrderSide side = 2; // whether you are buying or selling
+  BigInteger funds = 3; // the funds you want to exchange
   BigInteger price = 4; // missing on market orders
 }
 
