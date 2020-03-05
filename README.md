@@ -128,3 +128,67 @@ After we receive the orders, we have to subscribe for new orders with:
 
 Then use the `isOwnOrder` attribute to filter the orders. 
 
+## How to place orders.
+Note: You need to activate the trading pair before placing orders.
+
+To place orders we have to use the following protobuf message: 
+
+    rpc PlaceOrder (PlaceOrderRequest) returns (PlaceOrderResponse);
+
+    message PlaceOrderRequest {
+        string pairId = 1;
+        OrderSide side = 2; 
+        BigInteger funds = 3; 
+        BigInteger price = 4; 
+    }
+
+ * PairId : The trading pair to swap, like XSN_LTC.  
+ * Side: The side of the order, Buy or Sell. For example with XSN_LTC
+    - A Sell order means that we will Sell XSN, so we will receive LTC, 
+    - A Buy order means that we will Buy XSN paying in LTC.
+* Funds: The funds willing to trade, represented in the currency you own. For example XSN_BTC: in BUY order is in BTC, in SELL order is in XSN
+* Price: The limit price for the swap. For example in XSN_LTC  the price is represented in LTC, in XSN_BTC the price is represented in BTC.  If you want to place a market order, this value must be null. 
+
+Then we will receive a response which could be one of these three options. 
+
+    message PlaceOrderResponse {
+        oneof outcome {
+            SwapSuccess swapSuccess = 1;
+            Order order = 2;
+            PlaceOrderFailure failure = 3;
+        }
+    }
+
+
+1.- Swap Success: This means that our swap was completed.
+
+2.- Order: This means that our order was placed on the orderbook. so we have to wait for an order to get matched. 
+
+3.- PlaceOrderFailure: This means that our order couldn't be placed to orderbook or that the swap failed. The reason is included in the object. 
+
+
+If the order was placed to the orderbook, we must subscribe to the swaps stream to know if the swap was completed or failure with: 
+
+    service swaps {
+        rpc SubscribeSwaps (SubscribeSwapsRequest) returns (stream SwapResult);
+    }
+
+
+## Orderbook Api secret 
+
+This is given to trusted bot makers to disable the fees, you have to request for a secret to the [Stakenet team on Discord]( https://discord.gg/cyF5yCA) and then you just run the lssd like: 
+
+    ./AppRun --orderbookAPISecret "XXXXXXXXXX"
+
+Then you will see a log like this 
+
+    2020/03/04 19:14:51 | stakenet.swaps | 4625 | init | Starting swap service, cfg:
+    version: 1
+    url: QUrl("wss://orderbook.stakenet.io/api/ws")
+    secretSet: true
+    payFee: false
+    2020/03/04 19:14:51 | default | 4625 | CDBWrapper constructor
+    2020/03/04 19:14:51 | default | 4625 | Before TryCreateDirectories
+    2020/03/04 19:14:51 | default | 4625 | After TryCreateDirectories
+    2020/03/04 19:14:51 | default | 4625 | Before opening leveldb
+    2020/03/04 19:14:51 | default | 4625 | After opening leveldb, status  "OK"

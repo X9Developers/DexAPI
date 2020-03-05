@@ -113,7 +113,7 @@ message OrderbookFailure {
 message PlaceOrderFailure {
   oneof failure {
     SwapFailure swapFailure = 1;
-    OrderbookFailure orderbookFalure = 2;
+    OrderbookFailure orderbookFailure = 2;
   }
 }
 
