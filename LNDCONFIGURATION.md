@@ -107,14 +107,14 @@ if you created the LND with “--no-macaroons”, you also need to add this here
     1 ./lncli --lnddir="/root/.lnd_xsn" -rpcserver="localhost:10003" --no-macaroons unlock
     2 ./lncli --lnddir="/root/.lnd_xsn" -rpcserver="localhost:10003" --no-macaroons walletbalance
     3 ./lncli --lnddir="/root/.lnd_xsn" -rpcserver="localhost:10003" --no-macaroons describe graph 
-    4 if the output of 3. was empty, you can manually connect to a static node to get the full network topology: ./lncli --lnddir="/root/.lnd_xsn" -rpcserver="localhost:10003" --no-macaroons connect 02a49dc96ebcfd889f2cc694e9135fc8a502f7df4aa42b9a6f88d57759ddee5385@134.209.164.91:8384
+    4 if the output of 3. was empty, you can manually connect to a static node to get the full network topology: ./lncli --lnddir="/root/.lnd_xsn" -rpcserver="localhost:10003" --no-macaroons connect 02a49dc96ebcfd889f2cc694e9135fc8a502f7df4aa42b9a6f88d57759ddee5385@178.128.97.48:8384
 
 
 ## LND LTC Commands to test
 
     ./lncli --lnddir="/root/.lnd_ltc" -rpcserver="localhost:10001" --no-macaroons unlock
     ./lncli --lnddir=/root/.lnd_ltc -rpcserver=localhost:10001 --no-macaroons walletbalance
-    ./lncli --lnddir="~/.lnd_ltc" -rpcserver="localhost:10001" --no-macaroons connect 032c6e03e7a316baa3fb64fb360ebd8520e90a21b5a3c4bfca7fd75689a1564ae3@134.209.164.91:8002
+    ./lncli --lnddir="~/.lnd_ltc" -rpcserver="localhost:10001" --no-macaroons connect 032c6e03e7a316baa3fb64fb360ebd8520e90a21b5a3c4bfca7fd75689a1564ae3@178.128.97.48:8002
     
 ## Fund your XSN LND
 
@@ -144,18 +144,18 @@ Currently existing nodes described below:
 
 ## btc hub nodes:
  
-    "03757b80302c8dfe38a127c252700ec3052e5168a7ec6ba183cdab2ac7adad3910@134.209.164.91:11000"
-    "02bfe54c7b2ce6f737f0074062a2f2aaf855f81741474c05fd4836a33595960e18@134.209.164.91:21000"
+    "03757b80302c8dfe38a127c252700ec3052e5168a7ec6ba183cdab2ac7adad3910@178.128.97.48:11000"
+    "02bfe54c7b2ce6f737f0074062a2f2aaf855f81741474c05fd4836a33595960e18@178.128.97.48:21000"
 
 ## ltc hub nodes:
 
-    "0375e7d882b442785aa697d57c3ed3aef523eb2743193389bd205f9ae0c609e6f3@134.209.164.91:11002"
-    "0211eeda84950d7078aa62383c7b91def5cf6c5bb52d209a324cda0482dbfbe4d2@134.209.164.91:21002"
+    "0375e7d882b442785aa697d57c3ed3aef523eb2743193389bd205f9ae0c609e6f3@178.128.97.48:11002"
+    "0211eeda84950d7078aa62383c7b91def5cf6c5bb52d209a324cda0482dbfbe4d2@178.128.97.48:21002"
 
 ## xsn hub nodes:
 
-    "0396ca2f7cec03d3d179464acd57b4e6eabebb5f201705fa56e83363e3ccc622bb@134.209.164.91:11384"
-    "03bc3a97ffad197796fc2ea99fc63131b2fd6158992f174860c696af9f215b5cf1@134.209.164.91:21384"
+    "0396ca2f7cec03d3d179464acd57b4e6eabebb5f201705fa56e83363e3ccc622bb@178.128.97.48:11384"
+    "03bc3a97ffad197796fc2ea99fc63131b2fd6158992f174860c696af9f215b5cf1@178.128.97.48:21384"
 
 
 When setting up channels and placing orders, you must count next restrictions:
