@@ -145,7 +145,6 @@ Currently existing nodes described below:
 ## btc hub nodes:
  
     "03757b80302c8dfe38a127c252700ec3052e5168a7ec6ba183cdab2ac7adad3910@178.128.97.48:11000"
-    "02bfe54c7b2ce6f737f0074062a2f2aaf855f81741474c05fd4836a33595960e18@178.128.97.48:21000"
 
 ## ltc hub nodes:
 
@@ -181,7 +180,7 @@ When setting up channels and placing orders, you must count next restrictions:
 ## Example of channel open:
 
     lncli <node params (rpcserver, macaroons) > connect $HUB_PUBKEY@HUB_IP:NODE_PORT
-    lncli <node params (rpcserver, macaroons) > openchannel --node_key=$HUB_PUBKEY –local_amt=N(in satoshi)
+    lncli <node params (rpcserver, macaroons) > openchannel --node_key=$HUB_PUBKEY –-local_amt=N(in satoshi)
 
 Now need to wait until the payment is confirmed ( 6 blocks generated) though the above command generated a transaction id you can track it in the xsnexplorer.io, the pending channels can be seen with the pending channels command:
 
